@@ -1,12 +1,39 @@
 #ifndef _TORUSTIQ_LIB_SDK_TYPEDEFS_H_
 #define _TORUSTIQ_LIB_SDK_TYPEDEFS_H_
 
+#include <stdint.h>
+#include <stdlib.h>
+
 extern "C" struct TorustiqPluginInfo {
-    const char *host_app = "torustiq";
+    const char* host_app = "torustiq";
     const unsigned int api_version;
 
-    const char *id;
-    const char *name;
+    const char* id;
+    const char* name;
+};
+
+enum TorustiqMessageType {
+    /**
+     * Regular data message.
+     */
+    TORUSTIQ_MESSAGE_TYPE_DATA,
+    /**
+     * Send when end of data is reached.
+     */
+    TORUSTIQ_MESSAGE_TYPE_EOF,
+};
+
+extern "C" struct TorustiqMessageHeader {
+    const char* key;
+    const char* value;
+};
+
+extern "C" struct TorustiqMessage {
+    const TorustiqMessageType type;
+    const size_t payload_size;
+    const uint8_t* payload;
+    const size_t headers_count;
+    const TorustiqMessageHeader* headers;
 };
 
 enum TorustiqPluginStageKind {
@@ -58,11 +85,23 @@ extern "C" struct TorustiqPlugin {
 };
 
 /**
+ * This function is called from modules to enqueue a message to the pipeline.
+ */
+typedef void (*TorustiqHostSendMessageFnPtr)(TorustiqPluginStageHandle, const TorustiqMessage*);
+
+/**
+ * Globals shared with plugin by host
+ */
+struct TorustiqHostGlobals {
+    TorustiqHostSendMessageFnPtr sendMessageFnPtr;
+};
+
+/**
  * torustiq_plugin_init function
  * Initializes the plugin.
  * NB: this is about initializing the general plugin configuration
  * which could be shared between stages
  */
-typedef const TorustiqPlugin (*TorustiqPluginInitFnPtr)();
+typedef const TorustiqPlugin (*TorustiqPluginInitFnPtr)(TorustiqHostGlobals globals);
 
 #endif  // _TORUSTIQ_LIB_SDK_TYPEDEFS_H_
